@@ -117,28 +117,83 @@ export default function Podium({
         )}
 
 
-        <div
-          className={`
-            flex
-            h-16
-            w-16
-            items-center
-            justify-center
-            rounded-2xl
-            text-xl
-            font-black
+        <div className="relative">
 
-            ${
-              position === 1
-                ? "bg-orange-500 text-zinc-950"
-                : position === 2
-                ? "bg-zinc-300 text-zinc-950"
-                : "bg-amber-700 text-white"
-            }
-          `}
-        >
+          <div
+            className="
+              flex
+              h-20
+              w-20
+              items-center
+              justify-center
+              overflow-hidden
+              rounded-2xl
+              border
+              border-white/[0.08]
+              bg-zinc-950
+              shadow-lg
+            "
+          >
 
-          {position}º
+            {team.image ? (
+              <img
+                src={team.image}
+                alt={`Logo da ${team.name || "equipe"}`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div
+                className={`
+                  flex
+                  h-full
+                  w-full
+                  items-center
+                  justify-center
+                  text-xl
+                  font-black
+
+                  ${
+                    position === 1
+                      ? "bg-orange-500 text-zinc-950"
+                      : position === 2
+                      ? "bg-zinc-300 text-zinc-950"
+                      : "bg-amber-700 text-white"
+                  }
+                `}
+              >
+                {position}º
+              </div>
+            )}
+
+          </div>
+
+          <div
+            className={`
+              absolute
+              -bottom-2
+              -right-2
+              flex
+              h-7
+              min-w-7
+              items-center
+              justify-center
+              rounded-lg
+              px-1.5
+              text-[10px]
+              font-black
+              shadow-lg
+
+              ${
+                position === 1
+                  ? "bg-orange-500 text-zinc-950"
+                  : position === 2
+                  ? "bg-zinc-300 text-zinc-950"
+                  : "bg-amber-700 text-white"
+              }
+            `}
+          >
+            {position}º
+          </div>
 
         </div>
 

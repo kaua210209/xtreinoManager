@@ -106,59 +106,17 @@ export default function Sidebar({
       >
 
         <div
-          className="
-            flex
-            h-10
-            w-10
-            items-center
-            justify-center
-            rounded-xl
-            bg-orange-500
-            text-zinc-950
-            shadow-lg
-            shadow-orange-500/20
-          "
+          className="h-auto w-17  "
         >
-
-          <Gamepad2
-            size={21}
-            strokeWidth={2.5}
-          />
+          <img src="favicon.png" alt="" />
 
         </div>
-
-
-        <div>
-
-          <h1
-            className="
-              text-[15px]
-              font-black
-              tracking-tight
-            "
-          >
-
-            X-TREINO
-
-          </h1>
-
-
-          <p
-            className="
-              text-[10px]
-              font-semibold
-              uppercase
-              tracking-[0.18em]
-              text-orange-400
-            "
-          >
-
-            Manager
-
-          </p>
+        <div
+          className="mt-3 h-auto w-30  "
+        >
+          <img src="xtmanager.png" alt="" />
 
         </div>
-
       </div>
 
 

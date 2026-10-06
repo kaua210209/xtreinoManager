@@ -4,7 +4,9 @@ import {
   Users,
   UserRound,
   Plus,
-  Trash2
+  Trash2,
+  ImagePlus,
+  X
 } from "lucide-react";
 
 import {
@@ -73,6 +75,29 @@ export default function Equipes({
 
   }
 
+
+  function handleTeamImage(id, event) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Selecione uma imagem válida.");
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      updateTeam(id, "image", reader.result);
+    };
+
+    reader.readAsDataURL(file);
+  }
+
+  function removeTeamImage(id) {
+    updateTeam(id, "image", "");
+  }
 
   function updatePlayer(
     id,
@@ -264,25 +289,72 @@ export default function Equipes({
                   "
                 >
 
-                  <div
-                    className="
-                      flex
-                      h-10
-                      w-10
-                      items-center
-                      justify-center
-                      rounded-xl
-                      bg-orange-500/10
-                      text-xs
-                      font-black
-                      text-orange-400
-                    "
-                  >
+                  <div className="relative">
+                    <label
+                      htmlFor={`team-image-${team.id}`}
+                      className="
+                        flex
+                        h-12
+                        w-12
+                        cursor-pointer
+                        items-center
+                        justify-center
+                        overflow-hidden
+                        rounded-xl
+                        border
+                        border-white/[0.08]
+                        bg-zinc-950
+                        transition
+                        hover:border-orange-500/50
+                      "
+                      title="Adicionar imagem da equipe"
+                    >
+                      {team.image ? (
+                        <img
+                          src={team.image}
+                          alt={`Logo da ${team.name || "equipe"}`}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <ImagePlus
+                          size={20}
+                          className="text-zinc-600"
+                        />
+                      )}
+                    </label>
 
-                    {String(
-                      team.slot
-                    ).padStart(2, "0")}
+                    <input
+                      id={`team-image-${team.id}`}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(event) =>
+                        handleTeamImage(team.id, event)
+                      }
+                    />
 
+                    {team.image && (
+                      <button
+                        type="button"
+                        onClick={() => removeTeamImage(team.id)}
+                        className="
+                          absolute
+                          -right-1
+                          -top-1
+                          flex
+                          h-4
+                          w-4
+                          items-center
+                          justify-center
+                          rounded-full
+                          bg-red-500
+                          text-white
+                        "
+                        title="Remover imagem"
+                      >
+                        <X size={10} />
+                      </button>
+                    )}
                   </div>
 
 

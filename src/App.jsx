@@ -1,37 +1,14 @@
-import React, {
-  useEffect,
-  useMemo,
-  useState
-} from "react";
-
-import {
-  Menu,
-  X,
-  Trash2
-} from "lucide-react";
-
-import Sidebar
-  from "./components/Sidebar";
-
-import Topbar
-  from "./components/Topbar";
-
-import Dashboard
-  from "./pages/Dashboard";
-
-import Pontuacao
-  from "./pages/Pontuacao";
-
-import Equipes
-  from "./pages/Equipes";
-
-import Ranking
-  from "./pages/Ranking";
-
-import {
-  createTeams,
-  calculateRanking
-} from "./lib/scoring";
+import React, {useEffect, useMemo, useState} from "react";
+import {Menu, X, Trash2} from "lucide-react";
+import Sidebar from "./components/Sidebar";
+import Topbar from "./components/Topbar";
+import Dashboard from "./pages/Dashboard";
+import Pontuacao from "./pages/Pontuacao";
+import Equipes from "./pages/Equipes";
+import Ranking from "./pages/Ranking";
+import {createTeams, calculateRanking} from "./lib/scoring";
+import Login from "./pages/Login";
+import { supabase } from "./lib/supabase";
 
 
 export default function App() {
@@ -50,93 +27,254 @@ export default function App() {
   ] = useState(false);
 
 
+  /* =========================
+     AUTENTICAÇÃO
+  ========================= */
+
+  const [session, setSession] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [dataReady, setDataReady] = useState(false);
+
   const [
     teams,
     setTeams
-  ] = useState(() => {
-
-    try {
-
-      const saved =
-        localStorage.getItem(
-          "xtreino-teams"
-        );
+  ] = useState([]);
 
 
-      if (saved) {
+  useEffect(() => {
 
-        return JSON.parse(
-          saved
-        );
+    let active = true;
 
-      }
+    async function loadSession() {
 
-    } catch {
+      const { data } =
+        await supabase.auth.getSession();
 
-      console.log(
-        "Não foi possível carregar os dados."
+      if (!active) return;
+
+      setSession(
+        data.session ?? null
       );
+
+      setAuthReady(true);
 
     }
 
+    loadSession();
 
-    return createTeams();
+    const {
+      data: {
+        subscription
+      }
+    } =
+      supabase.auth.onAuthStateChange(
+        (_event, nextSession) => {
 
-  });
+          setSession(
+            nextSession ?? null
+          );
+
+        }
+      );
+
+    return () => {
+
+      active = false;
+
+      subscription.unsubscribe();
+
+    };
+
+  }, []);
 
 
   /* =========================
-     SALVAR AUTOMATICAMENTE
+     CARREGAR XTREINO DA CONTA
   ========================= */
 
   useEffect(() => {
 
-    localStorage.setItem(
-      "xtreino-teams",
-      JSON.stringify(
-        teams
-      )
-    );
+    if (!session?.user?.id) {
 
-  }, [teams]);
+      setTeams([]);
+
+      setDataReady(false);
+
+      return;
+
+    }
+
+    let active = true;
+
+    setDataReady(false);
+
+    async function loadXtReino() {
+
+      const {
+        data,
+        error
+      } =
+        await supabase
+          .from("xtreino_data")
+          .select("teams")
+          .eq(
+            "user_id",
+            session.user.id
+          )
+          .maybeSingle();
+
+      if (!active) return;
+
+      if (error) {
+
+        console.error(
+          "Erro ao carregar o XTREINO:",
+          error
+        );
+
+        setTeams([]);
+
+      } else if (
+        Array.isArray(data?.teams)
+      ) {
+
+        setTeams(
+          data.teams
+        );
+
+      } else {
+
+        setTeams([]);
+
+      }
+
+      setDataReady(true);
+
+    }
+
+    loadXtReino();
+
+    return () => {
+
+      active = false;
+
+    };
+
+  }, [session?.user?.id]);
+
+
+  /* =========================
+     SALVAR AUTOMATICAMENTE NO SUPABASE
+  ========================= */
+
+  useEffect(() => {
+
+    if (
+      !session?.user?.id ||
+      !dataReady
+    ) {
+      return;
+    }
+
+    const timer =
+      setTimeout(
+        async () => {
+
+          const {
+            error
+          } =
+            await supabase
+              .from("xtreino_data")
+              .upsert(
+                {
+                  user_id:
+                    session.user.id,
+
+                  teams,
+
+                  updated_at:
+                    new Date().toISOString()
+
+                },
+                {
+                  onConflict:
+                    "user_id"
+                }
+              );
+
+          if (error) {
+
+            console.error(
+              "Erro ao salvar o XTREINO:",
+              error
+            );
+
+          }
+
+        },
+        500
+      );
+
+    return () =>
+      clearTimeout(timer);
+
+  }, [
+    teams,
+    session?.user?.id,
+    dataReady
+  ]);
 
 
   /* =========================
      LIMPAR CAMPEONATO
   ========================= */
 
-  function clearChampionship() {
+  async function clearChampionship() {
 
     const confirmed =
       window.confirm(
-        "ATENÇÃO!\n\n" +
+        "ATENÇÃO!\\n\\n" +
         "Isso vai apagar todas as equipes, " +
-        "jogadores e pontuações do campeonato.\n\n" +
+        "jogadores e pontuações do seu XTREINO.\\n\\n" +
         "Deseja realmente limpar todos os dados?"
       );
 
+    if (
+      !confirmed ||
+      !session?.user?.id
+    ) {
+      return;
+    }
 
-    if (!confirmed) {
+    const { error } =
+      await supabase
+        .from("xtreino_data")
+        .delete()
+        .eq(
+          "user_id",
+          session.user.id
+        );
+
+    if (error) {
+
+      alert(
+        "Não foi possível limpar os dados."
+      );
+
+      console.error(
+        "Erro ao limpar o XTREINO:",
+        error
+      );
 
       return;
 
     }
 
-
-    localStorage.removeItem(
-      "xtreino-teams"
-    );
-
-
-    setTeams(
-      createTeams()
-    );
-
+    setTeams([]);
 
     setPage(
       "dashboard"
     );
-
 
     setMobileMenu(
       false
@@ -298,10 +436,46 @@ export default function App() {
   }
 
 
-  return (
+  /* =========================
+     ACESSO
+  ========================= */
 
-    <div
-      className="
+  if (!authReady) {
+
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-950 text-zinc-100">
+
+        <div className="text-sm font-bold text-zinc-500">
+          Verificando acesso...
+        </div>
+
+      </div>
+    );
+
+  }
+
+  if (!session) {
+
+    return <Login />;
+
+  }
+
+  if (!dataReady) {
+
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-950 text-zinc-100">
+
+        <div className="text-sm font-bold text-zinc-500">
+          Carregando seu XTREINO...
+        </div>
+
+      </div>
+    );
+
+  }
+
+  return (
+    <div className="
         min-h-screen
         bg-zinc-950
         text-zinc-100
@@ -551,6 +725,33 @@ export default function App() {
               justify-end
             "
           >
+
+            <button
+              onClick={async () => {
+
+                await supabase.auth.signOut();
+
+              }}
+              className="
+                mr-2
+                flex
+                items-center
+                gap-2
+                rounded-xl
+                border
+                border-white/10
+                bg-zinc-900
+                px-4
+                py-2.5
+                text-xs
+                font-black
+                text-zinc-300
+                transition
+                hover:bg-zinc-800
+              "
+            >
+              SAIR
+            </button>
 
             <button
               onClick={
